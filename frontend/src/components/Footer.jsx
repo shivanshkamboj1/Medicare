@@ -8,7 +8,7 @@ const Footer = () => {
 
         <div>
           <img className='mb-5 w-40' src={assets.logo} alt="" />
-          <p className='w-full md:w-2/3 text-gray-600 leading-6'>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.</p>
+          <p className='w-full md:w-2/3 text-gray-600 leading-6'>Medicare simplifies doctor bookings with ease. Since its inception, it has set the standard for seamless healthcare access, allowing users to find and schedule appointments effortlessly. With a focus on convenience and reliability, Medicare ensures a hassle-free experience for patients seeking medical care</p>
         </div>
 
         <div>
