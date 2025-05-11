@@ -100,22 +100,6 @@ const MyAppointments = () => {
         }
     };
     
-    // Function to make payment using stripe
-    const appointmentStripe = async (appointmentId) => {
-        try {
-            const { data } = await axios.post(backendUrl + '/api/user/payment-stripe', { appointmentId }, { headers: { token } })
-            if (data.success) {
-                const { session_url } = data
-                window.location.replace(session_url)
-            }else{
-                toast.error(data.message)
-            }
-        } catch (error) {
-            console.log(error)
-            toast.error(error.message)
-        }
-    }
-
 
 
     useEffect(() => {
