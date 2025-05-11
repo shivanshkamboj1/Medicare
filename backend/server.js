@@ -13,9 +13,12 @@ const port = process.env.PORT || 4000
 connectDB()
 connectCloudinary()
 
+
 // middlewares
 app.use(express.json())
-app.use(cors())
+app.use(cors({
+  origin: ['https://medicare-ecru-tau.vercel.app', 'https://medicare-jmit.vercel.app'],
+}))
 
 // api endpoints
 app.use("/api/user", userRouter)
