@@ -17,12 +17,26 @@ const AppContextProvider = (props) => {
     }
 
     // Function to calculate the age eg. ( 20_01_2000 => 24 )
-    const calculateAge = (dob) => {
-        const today = new Date()
-        const birthDate = new Date(dob)
-        let age = today.getFullYear() - birthDate.getFullYear()
-        return age
+const calculateAge = (dob) => {
+    const today = new Date();
+
+    // Split the date into parts (DD, MM, YYYY)
+    const [year, month, day] = dob.split('-');
+
+    // Create a new date object using the rearranged parts (YYYY-MM-DD)
+    const birthDate = new Date(`${year}-${month}-${day}`);
+
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+
+    // Adjust age if birthday hasn't occurred yet this year
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
     }
+
+    return age;
+};
+
 
     const value = {
         backendUrl,

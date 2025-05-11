@@ -9,6 +9,7 @@ const Login = () => {
   const [state, setState] = useState('Sign Up')
 
   const [name, setName] = useState('')
+  const [dob, setDob] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -20,7 +21,7 @@ const Login = () => {
 
     if (state === 'Sign Up') {
 
-      const { data } = await axios.post(backendUrl + '/api/user/register', { name, email, password })
+      const { data } = await axios.post(backendUrl + '/api/user/register', { name, email, password,dob })
 
       if (data.success) {
         localStorage.setItem('token', data.token)
@@ -65,6 +66,10 @@ const Login = () => {
         <div className='w-full '>
           <p>Email</p>
           <input onChange={(e) => setEmail(e.target.value)} value={email} className='border border-[#DADADA] rounded w-full p-2 mt-1' type="email" required />
+        </div>
+        <div className='w-full '>
+          <p>Date of birth</p>
+          <input onChange={(e) => setDob(e.target.value)} value={dob} className='border border-[#DADADA] rounded w-full p-2 mt-1' type="date" required />
         </div>
         <div className='w-full '>
           <p>Password</p>

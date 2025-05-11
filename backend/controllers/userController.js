@@ -6,7 +6,7 @@ import doctorModel from "../models/doctorModel.js";
 import appointmentModel from "../models/appointmentModel.js";
 import { v2 as cloudinary } from 'cloudinary'
 import razorpay from 'razorpay';
-
+import crypto from 'crypto'
 // Gateway Initialize
 const razorpayInstance = new razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
@@ -17,9 +17,9 @@ const razorpayInstance = new razorpay({
 const registerUser = async (req, res) => {
 
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password,dob } = req.body;
 
-        if (!name || !email || !password) {
+        if (!name || !email || !password ||!dob) {
             return res.json({ success: false, message: 'Missing Details' })
         }
 
@@ -37,6 +37,7 @@ const registerUser = async (req, res) => {
         const userData = {
             name,
             email,
+            dob,
             password: hashedPassword,
         }
 
@@ -230,146 +231,155 @@ const listAppointment = async (req, res) => {
 }
 
 // API to make payment of appointment using razorpay
-// const paymentRazorpay = async (req, res) => {
-//     try {
-
-//         const { appointmentId } = req.body
-//         const appointmentData = await appointmentModel.findById(appointmentId)
-
-//         if (!appointmentData || appointmentData.cancelled) {
-//             return res.json({ success: false, message: 'Appointment Cancelled or not found' })
-//         }
-
-//         // creating options for razorpay payment
-//         const options = {
-//             amount: appointmentData.amount * 100,
-//             currency: process.env.CURRENCY,
-//             receipt: appointmentId,
-//         }
-
-//         // creation of an order
-//         const order = await razorpayInstance.orders.create(options)
-
-//         res.json({ success: true, order })
-
-//     } catch (error) {
-//         console.log(error)
-//         res.json({ success: false, message: error.message })
-//     }
-// }
-
-// // API to verify payment of razorpay
-// const verifyRazorpay = async (req, res) => {
-//     try {
-//         const { razorpay_order_id } = req.body
-//         const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id)
-
-//         if (orderInfo.status === 'paid') {
-//             await appointmentModel.findByIdAndUpdate(orderInfo.receipt, { payment: true })
-//             res.json({ success: true, message: "Payment Successful" })
-//         }
-//         else {
-//             res.json({ success: false, message: 'Payment Failed' })
-//         }
-//     } catch (error) {
-//         console.log(error)
-//         res.json({ success: false, message: error.message })
-//     }
-// }
-
-
-import crypto from 'crypto';
-
 const paymentRazorpay = async (req, res) => {
     try {
-        console.log("🟡 Incoming Request Body:", req.body); // Log request data
 
-        const { appointmentId } = req.body;
-        console.log("🟡 Received appointmentId:", appointmentId);
+        const { appointmentId } = req.body
+        const appointmentData = await appointmentModel.findById(appointmentId)
 
-        if (!appointmentId) {
-            console.log("❌ Error: Appointment ID is missing");
-            return res.json({ success: false, message: "Appointment ID is required" });
+        if (!appointmentData || appointmentData.cancelled) {
+            return res.json({ success: false, message: 'Appointment Cancelled or not found' })
         }
 
-        const appointmentData = await appointmentModel.findById(appointmentId);
-        console.log("🟡 Fetched Appointment Data:", appointmentData);
-
-        if (!appointmentData) {
-            console.log("❌ Error: Appointment not found in the database");
-            return res.json({ success: false, message: "Appointment not found" });
-        }
-
-        if (appointmentData.cancelled) {
-            console.log("❌ Error: Appointment is cancelled");
-            return res.json({ success: false, message: "Appointment Cancelled" });
-        }
-
-        if (!appointmentData.amount) {
-            console.log("❌ Error: Appointment has no amount value");
-            return res.json({ success: false, message: "Invalid appointment amount" });
-        }
-
+        // creating options for razorpay payment
         const options = {
-            amount: 1 * 100, // Convert to paise (smallest unit)
-            currency: process.env.CURRENCY || "INR", // Ensure currency is set
+            amount: appointmentData.amount * 100,
+            currency: process.env.CURRENCY,
             receipt: appointmentId,
-        };
-
-        console.log("🟡 Creating Razorpay Order with options:", options);
-
-        const order = await razorpayInstance.orders.create(options);
-        console.log("✅ Razorpay Order Created Successfully:", order);
-
-        if (!order || !order.id) {
-            console.log("❌ Error: Razorpay order creation failed");
-            return res.json({ success: false, message: "Failed to create Razorpay order" });
         }
 
-        // Store order details in the database
-        appointmentData.paymentOrderId = order.id;
-        appointmentData.paymentStatus = "pending";
-        await appointmentData.save();
+        // creation of an order
+        const order = await razorpayInstance.orders.create(options)
 
-        console.log("✅ Order details saved to database");
-
-        res.json({ success: true, order });
+        res.json({ success: true, order })
 
     } catch (error) {
-        console.log("🔥 Error in paymentRazorpay:", error);
-        res.json({ success: false, message: error.message });
+        console.log(error)
+        res.json({ success: false, message: error.message })
     }
-};
+}
+
 
 
 const verifyRazorpay = async (req, res) => {
     try {
-        const { razorpay_order_id, razorpay_payment_id, signature, appointmentId } = req.body;
+        const {
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature
+        } = req.body;
 
-        // Generate expected signature using Razorpay's secret
-        const generated_signature = crypto
+        const generatedSignature = crypto
             .createHmac("sha256", process.env.RAZORPAY_SECRET)
-            .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+            .update(razorpay_order_id + "|" + razorpay_payment_id)
             .digest("hex");
 
-        if (generated_signature !== signature) {
-            return res.json({ success: false, message: "Invalid Payment Signature" });
-        }
-
-        // Fetch order details from Razorpay
-        const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
-
-        if (orderInfo.status === 'paid') {
-            await appointmentModel.findByIdAndUpdate(appointmentId, { payment: true });
-            res.json({ success: true, message: "Payment Successful" });
+        if (generatedSignature === razorpay_signature) {
+            // Payment verified
+            const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
+            await appointmentModel.findByIdAndUpdate(orderInfo.receipt, { payment: true });
+            return res.json({ success: true, message: "Payment Successful" });
         } else {
-            res.json({ success: false, message: "Payment Failed" });
+            return res.status(400).json({ success: false, message: "Invalid signature, payment failed" });
         }
+
     } catch (error) {
         console.log(error);
-        res.json({ success: false, message: error.message });
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
+
+
+// const paymentRazorpay = async (req, res) => {
+//     try {
+//         console.log("🟡 Incoming Request Body:", req.body); // Log request data
+
+//         const { appointmentId } = req.body;
+//         console.log("🟡 Received appointmentId:", appointmentId);
+
+//         if (!appointmentId) {
+//             console.log("❌ Error: Appointment ID is missing");
+//             return res.json({ success: false, message: "Appointment ID is required" });
+//         }
+
+//         const appointmentData = await appointmentModel.findById(appointmentId);
+//         console.log("🟡 Fetched Appointment Data:", appointmentData);
+
+//         if (!appointmentData) {
+//             console.log("❌ Error: Appointment not found in the database");
+//             return res.json({ success: false, message: "Appointment not found" });
+//         }
+
+//         if (appointmentData.cancelled) {
+//             console.log("❌ Error: Appointment is cancelled");
+//             return res.json({ success: false, message: "Appointment Cancelled" });
+//         }
+
+//         if (!appointmentData.amount) {
+//             console.log("❌ Error: Appointment has no amount value");
+//             return res.json({ success: false, message: "Invalid appointment amount" });
+//         }
+
+//         const options = {
+//             amount: 1 * 100, // Convert to paise (smallest unit)
+//             currency: process.env.CURRENCY || "INR", // Ensure currency is set
+//             receipt: appointmentId,
+//         };
+
+//         console.log("🟡 Creating Razorpay Order with options:", options);
+
+//         const order = await razorpayInstance.orders.create(options);
+//         console.log("✅ Razorpay Order Created Successfully:", order);
+
+//         if (!order || !order.id) {
+//             console.log("❌ Error: Razorpay order creation failed");
+//             return res.json({ success: false, message: "Failed to create Razorpay order" });
+//         }
+
+//         // Store order details in the database
+//         appointmentData.paymentOrderId = order.id;
+//         appointmentData.paymentStatus = "pending";
+//         await appointmentData.save();
+
+//         console.log("✅ Order details saved to database");
+
+//         res.json({ success: true, order });
+
+//     } catch (error) {
+//         console.log("🔥 Error in paymentRazorpay:", error);
+//         res.json({ success: false, message: error.message });
+//     }
+// };
+
+
+// const verifyRazorpay = async (req, res) => {
+//     try {
+//         const { razorpay_order_id, razorpay_payment_id, signature, appointmentId } = req.body;
+
+//         // Generate expected signature using Razorpay's secret
+//         const generated_signature = crypto
+//             .createHmac("sha256", process.env.RAZORPAY_SECRET)
+//             .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+//             .digest("hex");
+
+//         if (generated_signature !== signature) {
+//             return res.json({ success: false, message: "Invalid Payment Signature" });
+//         }
+
+//         // Fetch order details from Razorpay
+//         const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
+
+//         if (orderInfo.status === 'paid') {
+//             await appointmentModel.findByIdAndUpdate(appointmentId, { payment: true });
+//             res.json({ success: true, message: "Payment Successful" });
+//         } else {
+//             res.json({ success: false, message: "Payment Failed" });
+//         }
+//     } catch (error) {
+//         console.log(error);
+//         res.json({ success: false, message: error.message });
+//     }
+// };
 
 
 

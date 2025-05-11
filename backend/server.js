@@ -16,6 +16,7 @@ connectCloudinary()
 
 // middlewares
 app.use(express.json())
+// app.use(cors());
 app.use(cors({
   origin: ['https://medicare-ecru-tau.vercel.app', 'https://medicare-jmit.vercel.app'],
 }))
