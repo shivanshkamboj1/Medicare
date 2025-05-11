@@ -26,6 +26,7 @@ const Login = () => {
       if (data.success) {
         localStorage.setItem('token', data.token)
         setToken(data.token)
+        navigate('/')
       } else {
         toast.error(data.message)
       }
@@ -37,6 +38,7 @@ const Login = () => {
       if (data.success) {
         localStorage.setItem('token', data.token)
         setToken(data.token)
+         navigate('/')
       } else {
         toast.error(data.message)
       }
@@ -45,11 +47,6 @@ const Login = () => {
 
   }
 
-  useEffect(() => {
-    if (token) {
-      navigate('/')
-    }
-  }, [token])
 
   return (
     <form onSubmit={onSubmitHandler} className='min-h-[80vh] flex items-center'>
@@ -67,10 +64,10 @@ const Login = () => {
           <p>Email</p>
           <input onChange={(e) => setEmail(e.target.value)} value={email} className='border border-[#DADADA] rounded w-full p-2 mt-1' type="email" required />
         </div>
-        <div className='w-full '>
+        {state === 'Sign Up'&&<div className='w-full '>
           <p>Date of birth</p>
           <input onChange={(e) => setDob(e.target.value)} value={dob} className='border border-[#DADADA] rounded w-full p-2 mt-1' type="date" required />
-        </div>
+        </div>}
         <div className='w-full '>
           <p>Password</p>
           <input onChange={(e) => setPassword(e.target.value)} value={password} className='border border-[#DADADA] rounded w-full p-2 mt-1' type="password" required />
