@@ -44,12 +44,31 @@ const Appointment = () => {
 
             // setting hours 
             if (today.getDate() === currentDate.getDate()) {
-                currentDate.setHours(currentDate.getHours() > 10 ? currentDate.getHours() + 1 : 10)
-                currentDate.setMinutes(currentDate.getMinutes() > 30 ? 30 : 0)
+                const now = new Date();
+                let nextSlotTime = new Date(now);
+
+                // Round to next 30-minute slot
+                if (now.getMinutes() < 30) {
+                    nextSlotTime.setMinutes(30, 0, 0);
+                } else {
+                    nextSlotTime.setHours(now.getHours() + 1, 0, 0, 0);
+                }
+
+                // If nextSlotTime is before 10 AM, start from 10
+                if (nextSlotTime.getHours() < 10) {
+                    nextSlotTime.setHours(10, 0, 0, 0);
+                }
+
+                // If nextSlotTime is after 9 PM, skip adding slots
+                if (nextSlotTime >= endTime) {
+                    continue; // Skip this day, no slots left
+                }
+
+                currentDate = nextSlotTime;
             } else {
-                currentDate.setHours(10)
-                currentDate.setMinutes(0)
+                currentDate.setHours(10, 0, 0, 0);
             }
+
 
             let timeSlots = [];
 
